@@ -7,6 +7,7 @@ from PySide6.QtCore import *
 from PySide6.QtWidgets import *
 
 
+# mouse position function
 class mouse_position():
     def __init__(self):
         self.get_position()
