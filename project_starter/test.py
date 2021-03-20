@@ -1,61 +1,148 @@
-import sys
-from time import sleep
+from PySide2.QtGui import *
+from PySide2.QtWidgets import *
+from PySide2.QtCore import *
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (
-    QApplication,
-    QLabel,
-    QMainWindow,
-    QPushButton,
-    QVBoxLayout,
-    QWidget,
-)
+import time
+import traceback, sys
 
 
-class Window(QMainWindow):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.clicksCount = 0
-        self.setupUi()
+class WorkerSignals(QObject):
+    '''
+    Defines the signals available from a running worker thread.
 
-    def setupUi(self):
-        self.setWindowTitle("Freezing GUI")
-        self.resize(300, 150)
-        self.centralWidget = QWidget()
-        self.setCentralWidget(self.centralWidget)
-        # Create and connect widgets
-        self.clicksLabel = QLabel("Counting: 0 clicks", self)
-        self.clicksLabel.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
-        self.stepLabel = QLabel("Long-Running Step: 0")
-        self.stepLabel.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
-        self.countBtn = QPushButton("Click me!", self)
-        self.countBtn.clicked.connect(self.countClicks)
-        self.longRunningBtn = QPushButton("Long-Running Task!", self)
-        self.longRunningBtn.clicked.connect(self.runLongTask)
-        # Set the layout
+    Supported signals are:
+
+    finished
+        No data
+
+    error
+        tuple (exctype, value, traceback.format_exc() )
+
+    result
+        object data returned from processing, anything
+
+    progress
+        int indicating % progress
+
+    '''
+    finished = Signal()
+    error = Signal(tuple)
+    result = Signal(object)
+    progress = Signal(int)
+
+
+
+
+class Worker(QRunnable):
+    '''
+    Worker thread
+
+    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
+
+    :param callback: The function callback to run on this worker thread. Supplied args and
+                     kwargs will be passed through to the runner.
+    :type callback: function
+    :param args: Arguments to pass to the callback function
+    :param kwargs: Keywords to pass to the callback function
+
+    '''
+
+    def __init__(self, fn, *args, **kwargs):
+        super(Worker, self).__init__()
+
+        # Store constructor arguments (re-used for processing)
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+        self.signals = WorkerSignals()
+
+        # Add the callback to our kwargs
+        self.kwargs['progress_callback'] = self.signals.progress
+
+    @Slot()
+    def run(self):
+        '''
+        Initialise the runner function with passed args, kwargs.
+        '''
+
+        # Retrieve args/kwargs here; and fire processing using them
+        try:
+            result = self.fn(*self.args, **self.kwargs)
+        except:
+            traceback.print_exc()
+            exctype, value = sys.exc_info()[:2]
+            self.signals.error.emit((exctype, value, traceback.format_exc()))
+        else:
+            self.signals.result.emit(result)  # Return the result of the processing
+        finally:
+            self.signals.finished.emit()  # Done
+
+
+
+class MainWindow(QMainWindow):
+
+
+    def __init__(self, *args, **kwargs):
+        super(MainWindow, self).__init__(*args, **kwargs)
+
+        self.counter = 0
+
         layout = QVBoxLayout()
-        layout.addWidget(self.clicksLabel)
-        layout.addWidget(self.countBtn)
-        layout.addStretch()
-        layout.addWidget(self.stepLabel)
-        layout.addWidget(self.longRunningBtn)
-        self.centralWidget.setLayout(layout)
 
-    def countClicks(self):
-        self.clicksCount += 1
-        self.clicksLabel.setText(f"Counting: {self.clicksCount} clicks")
+        self.l = QLabel("Start")
+        b = QPushButton("DANGER!")
+        b.pressed.connect(self.oh_no)
 
-    def reportProgress(self, n):
-        self.stepLabel.setText(f"Long-Running Step: {n}")
+        layout.addWidget(self.l)
+        layout.addWidget(b)
 
-    def runLongTask(self):
-        """Long-running task in 5 steps."""
-        for i in range(5):
-            sleep(1)
-            self.reportProgress(i + 1)
+        w = QWidget()
+        w.setLayout(layout)
+
+        self.setCentralWidget(w)
+
+        self.show()
+
+        self.threadpool = QThreadPool()
+        print("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
+
+        self.timer = QTimer()
+        self.timer.setInterval(1000)
+        self.timer.timeout.connect(self.recurring_timer)
+        self.timer.start()
+
+    def progress_fn(self, n):
+        print("%d%% done" % n)
+
+    def execute_this_fn(self, progress_callback):
+        for n in range(0, 5):
+            time.sleep(1)
+            progress_callback.emit(n*100/4)
+
+        return "Done."
+
+    def print_output(self, s):
+        print(s)
+
+    def thread_complete(self):
+        print("THREAD COMPLETE!")
+
+    def oh_no(self):
+        # Pass the function to execute
+        worker = Worker(self.execute_this_fn) # Any other args, kwargs are passed to the run function
+        worker.signals.result.connect(self.print_output)
+        worker.signals.finished.connect(self.thread_complete)
+        worker.signals.progress.connect(self.progress_fn)
+
+        # Execute
+        self.threadpool.start(worker)
 
 
-app = QApplication(sys.argv)
-win = Window()
-win.show()
-sys.exit(app.exec_())
+    def recurring_timer(self):
+        self.counter +=1
+        self.l.setText("Counter: %d" % self.counter)
+
+
+app = QApplication([])
+window = MainWindow()
+app.exec_()

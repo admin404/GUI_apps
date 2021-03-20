@@ -44,7 +44,7 @@ class widget(QWidget):
     def ui(self):
         self.submit = QPushButton()
         self.submit.setText("Submit")
-        self.submit.clicked.connect(self.action_handler)
+        self.submit.pressed.connect(self.action_handler)
 
         self.layout = QGridLayout(self)
         self.layout.addWidget(self.submit)
