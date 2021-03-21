@@ -2,9 +2,9 @@ import pyautogui
 import sys
 import os
 
-from PySide2.QtGui import *
-from PySide2.QtCore import *
-from PySide2.QtWidgets import *
+from PyQt6.QtGui import *
+from PyQt6.QtCore import *
+from PyQt6.QtWidgets import *
 
 
 # mouse position function
@@ -57,4 +57,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     win = main()
     win.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

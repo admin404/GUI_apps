@@ -11,11 +11,13 @@ class main(QMainWindow):
         super().__init__()
         self.setup_ui()
 
+
     def setup_ui(self):
-        self.setCentralWidget(widget())
+        self.setCentralWidget(gui())
+        self.setWindowTitle("TEST")
 
 
-class widget(QWidget):
+class gui(QWidget):
     def __init__(self):
         super().__init__()
         self.ui()
