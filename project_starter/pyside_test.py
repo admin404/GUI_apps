@@ -9,6 +9,9 @@ from PySide2.QtGui import *
 class main(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.setup_ui()
+
+    def setup_ui(self):
         self.setCentralWidget(widget())
 
 
