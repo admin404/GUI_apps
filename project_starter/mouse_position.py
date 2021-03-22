@@ -1,4 +1,4 @@
-import pyautogui
+import pyautogui as pag
 import sys
 import os
 
@@ -6,8 +6,9 @@ from PySide6.QtGui import *
 from PySide6.QtCore import *
 from PySide6.QtWidgets import *
 
+# thread
 
-# main thread
+
 class thread(QThread):
     trig = Signal()
 
@@ -30,7 +31,7 @@ class main(QMainWindow):
         self.setCentralWidget(main_widget())
 
 
-# main Widget
+# main widget
 class main_widget(QWidget):
     def __init__(self):
         super().__init__()
@@ -50,30 +51,39 @@ class main_widget(QWidget):
 
     def action_handler(self):
         sg = self.btn.text()
-        if sg == 'Start':
+        if sg == "Start":
             self.thread = thread()
             self.thread.start()
-            self.btn.setText('Stop')
+            self.btn.setText("Stop")
+            print(mouse_position())
+            # self.position_label.setText(mouse_position)
+            # print(mouse_position())
 
         else:
-            self.btn.setText('Start')
+            self.btn.setText("Start")
             self.thread.terminate()
 
 
-# mouse position function
-class mouse_position():
+# mouse position
+class mouse_position:
     def __init__(self):
         self.get_position()
 
-    def get_position(self):
-        position = pyautogui.position()
-        while 1:
-            if (pyautogui.position() != position):
-                print(pyautogui.position())
-                _ = os.system('cls')
-        return pyautogui.position()
+    def __str__(self):
+        pass
 
-    def clear(self):
+    def get_position(self):
+        position = pag.position()
+        x, y = pag.position()
+        return x, y
+        # while 1:
+        # if pag.position() != position:
+        # print(pag.Size(pag.position))
+        # x, y = pag.position()
+        # return x, y
+        # print(pag.position())
+        # print(type(pag.position()))
+        # _ = os.system("cls")
 
 
 if __name__ == "__main__":
@@ -81,3 +91,5 @@ if __name__ == "__main__":
     win = main()
     win.show()
     sys.exit(app.exec_())
+
+# pag.moveTo(0, 0)
