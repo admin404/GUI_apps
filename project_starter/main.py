@@ -6,30 +6,27 @@ from PySide6.QtGui import *
 from PySide6.QtCore import *
 from PySide6.QtWidgets import *
 
-
+# main thread
 class thread(QThread):
 	trig = Signal()
 	def __init__(self):
 		super().__init__()
 		self.flag = 1
 
-
 	def run(self):
-		print("Starting")
 		mouse_position()
 
-
-	def stop(self):
-		print("Stopping")
-
-
+# main window
 class main(QMainWindow):
     def __init__(self):
         super(main, self).__init__()
+        self.ui()
+
+    def ui(self):
         self.setWindowTitle("Project Starter")
         self.setCentralWidget(widget())
 
-
+# main Widget
 class widget(QWidget):
     def __init__(self):
         super().__init__()
@@ -52,10 +49,7 @@ class widget(QWidget):
 
         else:
         	self.btn.setText('Start')
-        	self.thread.stop()
-
-
-
+        	self.thread.terminate()
 
 # mouse position function
 class mouse_position():
